@@ -101,8 +101,61 @@ class AntMoviesSpider(scrapy.Spider):
                     else:
                         movie_info_version_text = movie_info_version_text_tmp
 
-        #print(movie_info_version_text)
-                
+        #下半部分布局xpath
+        movie_detail_info_contout_xpath = movie_detail_info_dev_xpath.xpath('./div[@class="db_contout"]/div[@class="db_cont"]/div[@class="clearfix zoom"]/div[@class="base_r"]')
+        #导演
+        movie_info_director_text = []
+        #编剧
+        movie_info_screen_writer_text = []
+        #国家
+        movie_info_country_text = []
+
+        movie_detail_info_contout_top_xpath = movie_detail_info_contout_xpath.xpath('./div[@class="clearfix pt15"]')
+        for movie_info_base_text_xpath in movie_detail_info_contout_top_xpath.xpath('./dl[@class="info_l"]/dd[@class="__r_c_"]'):
+            movie_info_base_extract_xpath = movie_info_base_text_xpath.xpath('./strong/text()')
+            if(len(movie_info_base_extract_xpath.extract())>0):
+                if(movie_info_base_extract_xpath.extract()[0]=='导演：'):
+                    for temp_xpath in movie_info_base_text_xpath.xpath('./a'):
+                        movie_info_director_text.append(temp_xpath.xpath('./text()').extract()[0])
+                if(movie_info_base_extract_xpath.extract()[0]=='编剧：'):
+                    for temp_xpath in movie_info_base_text_xpath.xpath('./a'):
+                        movie_info_screen_writer_text.append(temp_xpath.xpath('./text()').extract()[0])
+                if(movie_info_base_extract_xpath.extract()[0]=='国家地区：'):
+                    for temp_xpath in movie_info_base_text_xpath.xpath('./a'):
+                        movie_info_country_text.append(temp_xpath.xpath('./text()').extract()[0])
+
+        #剧情介绍
+        movie_info_description_text = ''
+        movie_info_description_text_xpath = movie_detail_info_contout_top_xpath.xpath('./dl[@class="info_l"]/dt[@class="__r_c_"]/p/text()')
+        if(len(movie_info_description_text_xpath.extract())>0):
+            movie_info_description_text = movie_info_description_text_xpath.extract()[0]
+
+        #主演
+        movie_info_actor_text = []
+        for movie_info_main_actor_xpath in movie_detail_info_contout_top_xpath.xpath('./div[@class="info_r"]/dl[@class="main_actor"]'):
+            movie_info_main_actor_extract = movie_info_main_actor_xpath.xpath('./dd/p[1]/a/text()')
+            if(len(movie_info_main_actor_extract.extract())>0):
+                movie_info_actor_text.append(movie_info_main_actor_extract.extract()[0])
+        '''
+        #debug
+        if(len(movie_info_actor_text)==0):
+            print(movie_info_title_text + 'dont have actor')
+        '''
+        #评分
+        movie_info_rate_text = '0.0'
+        movie_info_rate_text_xpath = movie_detail_info_dev_xpath.xpath('./div[@class="grade_area news_area"]/div[@class="grade_areaer clearfix"]/div[@class="grade_tool"]/div[1]')
+        #movie_info_reate_text_xpath = movie_detail_info_dev_xpath.xpath('//*[@id="ratingRegion"]/div[1]/b')
+
+        print(movie_info_rate_text_xpath.extract()[0])
+        if(len(movie_info_rate_text_xpath.xpath('./text()').extract())>0):
+            rate_one = movie_info_rate_text_xpath.xpath('./text()').extract()[0]
+            rate_two = ''
+            if(len(movie_info_rate_text_xpath.xpath('./sup/text()').extract())>0):
+                rate_two = movie_info_rate_text_xpath.xpath('./sup/text()').extract()[0]
+            movie_info_rate_text = rate_one + rate_two
+
         #debug print
-        #print(movie_info_image_url,movie_info_title_text)
-        print(movie_info_image_url,movie_info_title_text,movie_info_time_length_text,movie_info_type_texts,movie_info_release_date_text,movie_info_version_text)
+        
+        print(movie_info_rate_text)
+        #print(movie_info_director_text,movie_info_screen_writer_text,movie_info_country_text)
+        #print(movie_info_image_url,movie_info_title_text,movie_info_time_length_text,movie_info_type_texts,movie_info_release_date_text,movie_info_version_text)
