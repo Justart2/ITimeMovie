@@ -1,6 +1,7 @@
 ﻿import scrapy
 import time
 import random
+import json
 import requests
 
 class AntMoviesSpider(scrapy.Spider):
@@ -15,7 +16,7 @@ class AntMoviesSpider(scrapy.Spider):
         movie_show_dev_xpaths = response.xpath('//div[@id="hotplayContent"]/div')
         movie_show_first_url = movie_show_dev_xpaths.xpath('./div[@class="moviebox clearfix"]/div[@class="firstmovie fl"]/dl/dt/a/@href').extract()[0]
 
-        #yield scrapy.Request(movie_show_first_url, callback=self.parse_movie_detail_info)
+        yield scrapy.Request(movie_show_first_url, callback=self.parse_movie_detail_info)
         #print(movie_show_first_url)
         movie_show_url_list.append(movie_show_first_url)
         movie_show_others_list_xpath = movie_show_dev_xpaths.xpath('./div[@class="moviebox clearfix"]/div[@class="othermovie fr"]/ul[@class="clearfix"]')
@@ -37,10 +38,10 @@ class AntMoviesSpider(scrapy.Spider):
                 #print(movie_show_other_url)
                 movie_show_url_list.append(movie_show_other_url)
 
-        for movie_show_url in movie_show_url_list:
+        #for movie_show_url in movie_show_url_list:
             #print(movie_show_url)
             #此处可以直接yield 到电影详情页面去获取其他信息
-            yield scrapy.Request(movie_show_url, callback=self.parse_movie_detail_info)
+            #yield scrapy.Request(movie_show_url, callback=self.parse_movie_detail_info)
 
         #获取即将上映电影的url
 
@@ -141,7 +142,8 @@ class AntMoviesSpider(scrapy.Spider):
         if(len(movie_info_actor_text)==0):
             print(movie_info_title_text + 'dont have actor')
         '''
-        #评分
+        #评分(script动态加载暂时获取不到)
+        '''
         movie_info_rate_text = '0.0'
         movie_info_rate_text_xpath = movie_detail_info_dev_xpath.xpath('./div[@class="grade_area news_area"]/div[@class="grade_areaer clearfix"]/div[@class="grade_tool"]/div[1]')
         #movie_info_reate_text_xpath = movie_detail_info_dev_xpath.xpath('//*[@id="ratingRegion"]/div[1]/b')
@@ -153,9 +155,47 @@ class AntMoviesSpider(scrapy.Spider):
             if(len(movie_info_rate_text_xpath.xpath('./sup/text()').extract())>0):
                 rate_two = movie_info_rate_text_xpath.xpath('./sup/text()').extract()[0]
             movie_info_rate_text = rate_one + rate_two
-
-        #debug print
+        '''
+        #电影剧照
+        movie_info_images_url = ''
+        movie_info_images_url_xpath = movie_detail_info_contout_xpath.xpath('./div[@class="db_ivm"]/div[@style="margin-top:40px;"]/div[@id="imageRegion"]/div[@class="clearfix px12"]/a[@pan="M14_Movie_Overview_Image_More"]/@href')
+        if(len(movie_info_images_url_xpath.extract())>0):
+            movie_info_images_url = movie_info_images_url_xpath.extract()[0]
+             yield scrapy.Request(movie_info_images_url, callback=self.download_movie_images)  
+        else:
+            print(movie_info_title_text + 'dont have image')
+        '''
+        movie_info_image_url = []
+        movie_info_images_xpaths = response.xpath('//script[@type="text/javascript"]')
+        for movie_info_images_xpath in movie_info_images_xpaths:
+            movie_info_image_text = movie_info_images_xpath.xpath('./text()').extract()[0]
+            if('var imageListNews =' in movie_info_image_text):
+                movie_info_image_json = movie_info_image_text.split(';')[0].split('=')[1].strip()
+                movie_info_image_json_objects = json.loads(movie_info_image_json)
+                for movie_info_image_json_object in movie_info_image_json_objects:
+                    movie_info_image_url.append(movie_info_image_json_object['imageUrl'])
+                    print(movie_info_image_json_object['imageUrl'])
+'''
         
-        print(movie_info_rate_text)
+       
+        #debug print
+        #print(movie_info_images_url)
+        #print(movie_info_rate_text)
         #print(movie_info_director_text,movie_info_screen_writer_text,movie_info_country_text)
         #print(movie_info_image_url,movie_info_title_text,movie_info_time_length_text,movie_info_type_texts,movie_info_release_date_text,movie_info_version_text)
+
+    def download_movie_images(self,response):
+        print('debug')
+        movie_info_images_xpaths = response.xpath('//script[@type="text/javascript"]')
+        print(len(movie_info_images_xpaths))
+        for movie_info_images_xpath in movie_info_images_xpaths:
+            movie_info_image_text = movie_info_images_xpath.xpath('./text()').extract()[0]
+            if('var imageList =' in movie_info_image_text):
+                movie_info_image_json = movie_info_image_text.split('=')[1].strip()
+                print(movie_info_image_json)
+                '''
+                movie_info_image_json_objects = json.loads(movie_info_image_json)
+                for movie_info_image_json_object in movie_info_image_json_objects:
+                    movie_info_image_url.append(movie_info_image_json_object['imageUrl'])
+                    print(movie_info_image_json_object['imageUrl'])
+                    '''
