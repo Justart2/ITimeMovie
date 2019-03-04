@@ -3,11 +3,14 @@ import time
 import random
 import json
 import requests
+from io import BytesIO
+from PIL import Image
+from Ant_Movies_Data.items import AntMoviesDataItem
 
 class AntMoviesSpider(scrapy.Spider):
     name = 'ant_movies_data_spider'
     start_urls = [
-        'http://theater.mtime.com/China_Beijing/'
+        'http://theater.mtime.com/China_Shanghai/'
     ]
 
     def parse(self,response):
@@ -16,7 +19,7 @@ class AntMoviesSpider(scrapy.Spider):
         movie_show_dev_xpaths = response.xpath('//div[@id="hotplayContent"]/div')
         movie_show_first_url = movie_show_dev_xpaths.xpath('./div[@class="moviebox clearfix"]/div[@class="firstmovie fl"]/dl/dt/a/@href').extract()[0]
 
-        yield scrapy.Request(movie_show_first_url, callback=self.parse_movie_detail_info)
+        #yield scrapy.Request(movie_show_first_url, callback=self.parse_movie_detail_info)
         #print(movie_show_first_url)
         movie_show_url_list.append(movie_show_first_url)
         movie_show_others_list_xpath = movie_show_dev_xpaths.xpath('./div[@class="moviebox clearfix"]/div[@class="othermovie fr"]/ul[@class="clearfix"]')
@@ -38,10 +41,10 @@ class AntMoviesSpider(scrapy.Spider):
                 #print(movie_show_other_url)
                 movie_show_url_list.append(movie_show_other_url)
 
-        #for movie_show_url in movie_show_url_list:
+        for movie_show_url in movie_show_url_list:
             #print(movie_show_url)
             #此处可以直接yield 到电影详情页面去获取其他信息
-            #yield scrapy.Request(movie_show_url, callback=self.parse_movie_detail_info)
+            yield scrapy.Request(movie_show_url, callback=self.parse_movie_detail_info)
 
         #获取即将上映电影的url
 
@@ -157,6 +160,7 @@ class AntMoviesSpider(scrapy.Spider):
             movie_info_rate_text = rate_one + rate_two
         '''
         #电影剧照
+        '''
         movie_info_images_url = ''
         movie_info_images_url_xpath = movie_detail_info_contout_xpath.xpath('./div[@class="db_ivm"]/div[@style="margin-top:40px;"]/div[@id="imageRegion"]/div[@class="clearfix px12"]/a[@pan="M14_Movie_Overview_Image_More"]/@href')
         if(len(movie_info_images_url_xpath.extract())>0):
@@ -165,7 +169,7 @@ class AntMoviesSpider(scrapy.Spider):
         else:
             print(movie_info_title_text + 'dont have image')
         '''
-        movie_info_image_url = []
+        movie_stage_photos_urls = []
         movie_info_images_xpaths = response.xpath('//script[@type="text/javascript"]')
         for movie_info_images_xpath in movie_info_images_xpaths:
             movie_info_image_text = movie_info_images_xpath.xpath('./text()').extract()[0]
@@ -173,16 +177,68 @@ class AntMoviesSpider(scrapy.Spider):
                 movie_info_image_json = movie_info_image_text.split(';')[0].split('=')[1].strip()
                 movie_info_image_json_objects = json.loads(movie_info_image_json)
                 for movie_info_image_json_object in movie_info_image_json_objects:
-                    movie_info_image_url.append(movie_info_image_json_object['imageUrl'])
-                    print(movie_info_image_json_object['imageUrl'])
-'''
+                    movie_stage_photos_urls.append(movie_info_image_json_object['imageUrl'])
+                    #print(movie_info_image_json_object['imageUrl'])
+
         
        
         #debug print
         #print(movie_info_images_url)
         #print(movie_info_rate_text)
         #print(movie_info_director_text,movie_info_screen_writer_text,movie_info_country_text)
-        #print(movie_info_image_url,movie_info_title_text,movie_info_time_length_text,movie_info_type_texts,movie_info_release_date_text,movie_info_version_text)
+        '''
+        print(
+            movie_info_image_url,
+            movie_info_title_text,
+            movie_info_director_text,
+            movie_info_actor_text,
+            movie_info_time_length_text,
+            movie_info_country_text,
+            movie_info_type_texts,
+            movie_info_release_date_text,
+            movie_info_version_text,
+            movie_info_description_text)'''
+
+        movieItem = AntMoviesDataItem()
+        #电影标题
+        movieItem['movie_name'] = movie_info_title_text
+
+        #电影评分
+        movieItem['movie_rate'] = 0
+
+        #电影logo
+        movieItem['movie_img_url'] = movie_info_image_url
+        #下载图片
+        movieItem['movie_image_name'] = self.download_image(movie_info_image_url)
+        #导演
+        movieItem['movie_director'] = movie_info_director_text
+
+        #主演
+        movieItem['movie_actors'] = movie_info_actor_text
+
+        #制片国家/地区
+        movieItem['movie_country'] = movie_info_country_text
+
+        #片长
+        movieItem['movie_length'] = movie_info_time_length_text
+
+        #语言
+        movieItem['movie_language'] = 'none'
+
+        #剧情介绍
+        movieItem['movie_description'] = movie_info_description_text
+
+        #上映时间
+        movieItem['movie_show_time'] = movie_info_release_date_text
+
+        #类型
+        movieItem['movie_type'] = movie_info_type_texts
+
+        #版本
+        movieItem['movie_version'] = movie_info_version_text
+        print(movieItem)
+
+        return movieItem
 
     def download_movie_images(self,response):
         print('debug')
@@ -199,3 +255,25 @@ class AntMoviesSpider(scrapy.Spider):
                     movie_info_image_url.append(movie_info_image_json_object['imageUrl'])
                     print(movie_info_image_json_object['imageUrl'])
                     '''
+
+    def download_image(self,image_url):
+
+        a = str(time.time()).split('.')[0]
+        b = ''
+        c = 'ant_'
+        d = '.jpg'
+        i = 0
+        while i<5:
+            b = b + str(int(random.random()*10))
+            i = i+1
+        img_name = c+a+b+d
+
+        # 二进制数据获取（保存本地）
+        '''
+        imageuri = requests.get(image_url)
+
+        image = Image.open(BytesIO(imageuri.content))
+
+        image.save('F:\\software\\Tomcat\\apache-tomcat-8.5.31\\webapps\\ant_image\\movie_image\\' + img_name)
+'''
+        return img_name
