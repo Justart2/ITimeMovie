@@ -8,4 +8,4 @@
 #scrapy runspider ant_movie_spider.py --nolog
 
 #运行整个scrapy项目：
-#scrapy crawl ant_movie_data_spider
+#scrapy crawl ant_movies_data_spider

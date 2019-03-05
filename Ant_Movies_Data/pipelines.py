@@ -9,7 +9,6 @@ import mysql.connector
 
 class AntMoviesDataPipeline(object):
     def __init__(self):
-        print('------------------------------------------------------------------------------------------__init__(self)----')
         self.conn = mysql.connector.connect(host="localhost",user='root',password='root',database='python_test')
         self.cursor = self.conn.cursor()
 
@@ -23,7 +22,6 @@ class AntMoviesDataPipeline(object):
             self.conn.rollback()
 
     def process_item(self, item, spider):
-        print('-------------------------------------------------------------------------------------process_item---------')
         #电影标题
         movie_name = item.get('movie_name')
         #电影评分
@@ -51,7 +49,7 @@ class AntMoviesDataPipeline(object):
         #price
         movie_price = 50.0
         #movie_stage_photos
-        movie_stage_photos = ''
+        movie_stage_photos = item.get('movie_stage_photos')
         insert_sql = '''
                 insert into ant_movie_info 
                 (m_name, m_type, m_director, m_actor, m_country, m_version, 
@@ -61,11 +59,12 @@ class AntMoviesDataPipeline(object):
                 (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);
             '''
         #重新插入数据
-        #try:
-        self.cursor.execute(insert_sql,(movie_name,movie_type,movie_director,movie_actors,movie_country,movie_version,movie_length,movie_description,movie_show_time,movie_price,movie_rate,movie_image_name,movie_stage_photos))
-        self.conn.commit()
-        #except:
-        #self.conn.rollback()
+        try:
+            self.cursor.execute(insert_sql,(movie_name,movie_type,movie_director,movie_actors,movie_country,movie_version,movie_length,movie_description,movie_show_time,movie_price,movie_rate,movie_image_name,movie_stage_photos))
+            self.conn.commit()
+        except Exception as e:
+            print('except:',e)
+            self.conn.rollback()
         return item
 
     def close_spider(self,spider):

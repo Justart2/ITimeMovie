@@ -17,9 +17,11 @@ NEWSPIDER_MODULE = 'Ant_Movies_Data.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'Ant_Movies_Data (+http://www.yourdomain.com)'
-
+from faker import Factory
+f = Factory.create()
+USER_AGENT = f.user_agent()
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -64,9 +66,9 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'Ant_Movies_Data.pipelines.AntMoviesDataPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'Ant_Movies_Data.pipelines.AntMoviesDataPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
