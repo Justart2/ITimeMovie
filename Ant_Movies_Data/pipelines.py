@@ -9,7 +9,7 @@ import mysql.connector
 
 class AntMoviesDataPipeline(object):
     def __init__(self):
-        self.conn = mysql.connector.connect(host="localhost",user='root',password='root',database='python_test')
+        self.conn = mysql.connector.connect(host="localhost",user='root',password='root',database='ant_movie')
         self.cursor = self.conn.cursor()
 
         #清理数据库
@@ -44,6 +44,8 @@ class AntMoviesDataPipeline(object):
         movie_description = item.get('movie_description')
         #上映时间
         movie_show_time = item.get('movie_show_time')
+        if movie_show_time=='0000-00-00':
+            return
         #version
         movie_version = item.get('movie_version')
         #price

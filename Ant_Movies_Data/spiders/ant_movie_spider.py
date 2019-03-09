@@ -47,15 +47,15 @@ class AntMoviesSpider(scrapy.Spider):
             yield scrapy.Request(movie_show_url, callback=self.parse_movie_detail_info)
 
         #获取即将上映电影的url
-        '''
+        
         movie_will_show_id_dicts = response.xpath('//div[@id="upcomingRegion"]/@mids').extract()[0]
 
         for movie_will_show_id in movie_will_show_id_dicts.split(","):
             movie_will_show_url = "http://movie.mtime.com/" + movie_will_show_id
             #print(movie_will_show_url)
             #此处可以直接yield 到电影详情页面去获取其他信息
-            #yield scrapy.Request(movie_will_show_url, callback=self.parse_movie_detail_info)
-        '''
+            yield scrapy.Request(movie_will_show_url, callback=self.parse_movie_detail_info)
+        
     def parse_movie_detail_info(self,response):
         movie_detail_info_dev_xpath = response.xpath('//div[@class="db_topcont"]')
         movie_detail_info_head_xpath = movie_detail_info_dev_xpath.xpath('./div[@id="db_head"]')
@@ -246,11 +246,14 @@ class AntMoviesSpider(scrapy.Spider):
         #电影剧照
         movie_stage_photos_str = ''
         for movie_stage_photo in movie_stage_photos_urls:
-            print (movie_stage_photo)
+            #print (movie_stage_photo)
+            movie_stage_photo_name = self.download_movie_stage_image(movie_stage_photo)
+            if movie_stage_photo_name == 'error':
+                continue
             if movie_stage_photos_str == '':
-                movie_stage_photos_str = self.download_movie_stage_image(movie_stage_photo)
+                movie_stage_photos_str = movie_stage_photo_name
             else:
-                movie_stage_photos_str = movie_stage_photos_str + ';' + self.download_movie_stage_image(movie_stage_photo)
+                movie_stage_photos_str = movie_stage_photos_str + ';' + movie_stage_photo_name
         movieItem['movie_stage_photos'] = movie_stage_photos_str
 
 
@@ -298,17 +301,17 @@ class AntMoviesSpider(scrapy.Spider):
         img_name = c+a+b+d
 
         # 二进制数据获取（保存本地）
-        
-        imageuri = requests.get(image_url)
-
-        image = Image.open(BytesIO(imageuri.content))
-
-        image.save('F:\\software\\Tomcat\\apache-tomcat-8.5.31\\webapps\\ant_image\\movie_logo_image\\' + img_name)
-        
+        try:
+            imageuri = requests.get(image_url)
+            image = Image.open(BytesIO(imageuri.content))
+            image.save('F:\\software\\Tomcat\\apache-tomcat-8.5.31\\webapps\\ant_image\\movie_logo_image\\' + img_name)
+        except Exception as e:
+            print(e)
+            return 'error'
         return img_name
 
     def download_movie_stage_image(self,image_url):
-        print(image_url)
+        #print(image_url)
         a = str(time.time()).split('.')[0]
         b = ''
         c = 'ant_'
@@ -320,11 +323,11 @@ class AntMoviesSpider(scrapy.Spider):
         img_name = c+a+b+d
 
         # 二进制数据获取（保存本地）
-        
-        imageuri = requests.get(image_url)
-
-        image = Image.open(BytesIO(imageuri.content))
-
-        image.save('F:\\software\\Tomcat\\apache-tomcat-8.5.31\\webapps\\ant_image\\movie_stage_photos\\' + img_name)
-        
+        try:
+            imageuri = requests.get(image_url)
+            image = Image.open(BytesIO(imageuri.content))
+            image.save('F:\\software\\Tomcat\\apache-tomcat-8.5.31\\webapps\\ant_image\\movie_stage_photos\\' + img_name)
+        except Exception as e:
+            print(e)
+            return 'error'
         return img_name
